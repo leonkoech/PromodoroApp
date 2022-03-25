@@ -266,6 +266,7 @@ public class BrainActivity extends AppCompatActivity {
     private int startSession() {
         int response = -1;
         try {
+            //we are predicting enjoyment
             response = mService.startPredictionSession(NeuosSDK.Predictions.ZONE);
             if ( response != NeuosSDK.ResponseCodes.SUCCESS){
                 Log.i(TAG, "startSession: failed with code " + response);
