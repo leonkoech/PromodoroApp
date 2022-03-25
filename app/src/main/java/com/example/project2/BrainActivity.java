@@ -32,6 +32,7 @@ import io.neuos.INeuosSdkListener;
 import io.neuos.NeuosQAProperties;
 import io.neuos.NeuosSDK;
 
+
 public class BrainActivity extends AppCompatActivity {
 
 
@@ -58,7 +59,7 @@ public class BrainActivity extends AppCompatActivity {
         // This should be called once in your Fragment's onViewCreated() or in Activity onCreate() method to avoid dialog duplicates.
         loadingDialog = builder.create();
         setContentView(R.layout.activity_brain);
-        launchButton = findViewById(R.id.launch);
+        launchButton = findViewById(R.id.start);
     }
 
     @Override
@@ -76,12 +77,12 @@ public class BrainActivity extends AppCompatActivity {
 
     public void onLaunchClick(View view) {
         launchButton.setEnabled(false);
-        // This begins the flow of login -> check calibration -> start session -> Qa -> Game
+        // This begins the flow of login -> check calibration -> start session -> Qa -> display data
         checkNeuosLoginStatus();
     }
 
     // Activity launcher from login
-    private final ActivityResultLauncher<Intent> gameLauncher = registerForActivityResult(
+    private final ActivityResultLauncher<Intent> appLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK) {
@@ -167,7 +168,7 @@ public class BrainActivity extends AppCompatActivity {
                 }
                 else{
                     // we are good to go, launch the game
-                    gameLauncher.launch(new Intent(this , MainActivity2.class));
+                    appLauncher.launch(new Intent(this , MainActivity2.class));
                 }
             });
     // Activity launcher for permissions request
@@ -275,6 +276,7 @@ public class BrainActivity extends AppCompatActivity {
         } catch (RemoteException e) {
             Log.e(TAG, e.getLocalizedMessage());
         }
+        // Return the response code regardless of the co
         return response;
     }
 
