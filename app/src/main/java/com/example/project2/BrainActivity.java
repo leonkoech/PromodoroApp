@@ -25,7 +25,15 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.Toast;
 
+import com.google.android.gms.tasks.OnSuccessListener;
+import com.google.firebase.firestore.DocumentReference;
+import com.google.firebase.firestore.FirebaseFirestore;
+
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import io.neuos.INeuosSdk;
 import io.neuos.INeuosSdkListener;
@@ -44,6 +52,9 @@ public class BrainActivity extends AppCompatActivity {
     private INeuosSdk mService;
     private Runnable mPostConnection;
     private BrainActivity.DeviceConnectionReceiver deviceListReceiver;
+    private int counter = 0;
+    private Map<Object, Object> info = new HashMap<>();
+    FirebaseFirestore database = FirebaseFirestore.getInstance();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,8 +86,25 @@ public class BrainActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
+    public void addDataToFirebase(Object time,Object value){
+        info.put("Enjoyment",value);
+        info.put("time",time);
+        database.collection("userInformation").document("user"+String.valueOf(counter+1))
+                .collection("Enjoyment").add(info)
+                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                    @Override
+                    public void onSuccess(DocumentReference documentReference) {
+                        Log.i(TAG,"Updated Data in Firebase");
+                    }
+                });
+
+
+    }
+
+
     public void onLaunchClick(View view) {
         launchButton.setEnabled(false);
+
         // This begins the flow of login -> check calibration -> start session -> Qa -> display data
         checkNeuosLoginStatus();
     }
@@ -116,10 +144,30 @@ public class BrainActivity extends AppCompatActivity {
                 }
             }
         }
+        // problem statement is that I have to post information to firebase every x number of seconds
+        // solution check if time is divisible by 5
+
         @Override
         public void onValueChanged(String key, float value) throws RemoteException {
-            Log.i(TAG, "onValueChanged K: " + key + " V: " + value);
-            // update our view with proper values
+            switch(key){
+                case NeuosSDK.PredictionValues.ENJOYMENT_STATE:{
+                    Log.i(TAG, "onValueChanged K: " + key + " V: " + value);
+                    // update our view with proper values
+                    // check timer if it's equivalent to 10 or multiples of ten
+                    counter++;
+                    if (counter%25==0){
+                        Date currentTime = Calendar.getInstance().getTime();
+
+                        // TO:DO add data to firebase
+                        addDataToFirebase(String.valueOf(currentTime),value);
+
+                    }
+                    break;
+                }
+
+            }
+
+
 
         }
         @Override
