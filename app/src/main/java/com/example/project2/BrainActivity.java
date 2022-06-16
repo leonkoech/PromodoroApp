@@ -29,6 +29,7 @@ import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
+import java.lang.reflect.Array;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -54,6 +55,8 @@ public class BrainActivity extends AppCompatActivity {
     private BrainActivity.DeviceConnectionReceiver deviceListReceiver;
     private int counter = 0;
     private Map<Object, Object> info = new HashMap<>();
+    private float EnjoymentArr[] = new float[25];
+    private float FocusArr[] = new float[25];
     FirebaseFirestore database = FirebaseFirestore.getInstance();
 
     @Override
@@ -97,8 +100,6 @@ public class BrainActivity extends AppCompatActivity {
                         Log.i(TAG,"Updated Data in Firebase");
                     }
                 });
-
-
     }
 
 
@@ -149,17 +150,30 @@ public class BrainActivity extends AppCompatActivity {
 
         @Override
         public void onValueChanged(String key, float value) throws RemoteException {
+
             switch(key){
                 case NeuosSDK.PredictionValues.ENJOYMENT_STATE:{
                     Log.i(TAG, "onValueChanged K: " + key + " V: " + value);
                     // update our view with proper values
                     // check timer if it's equivalent to 10 or multiples of ten
+                    Log.d(TAG, String.valueOf(counter));
+                    EnjoymentArr[counter] = value;
                     counter++;
-                    if (counter%25==0){
+//
+
+                    if (counter%24==0){
                         Date currentTime = Calendar.getInstance().getTime();
 
                         // TO:DO add data to firebase
-                        addDataToFirebase(String.valueOf(currentTime),value);
+//                        addDataToFirebase(String.valueOf(currentTime),value);
+
+//                        Log.i(TAG,currentTime+" "+value);
+                        Log.w(TAG,String.valueOf(counter));
+                        Log.d(TAG,String.valueOf(arrayAverage(EnjoymentArr,counter)));
+                        counter=1;
+                        //this is where the magic happens
+                        // receive value for enjoyment state and focus state
+                        // place them in a queue
 
                     }
                     break;
@@ -170,6 +184,19 @@ public class BrainActivity extends AppCompatActivity {
 
 
         }
+        public float arrayAverage(float[] arr,int counter){
+//            int pos = 0;
+            float total = 0;
+            int totalNum = 0;
+            for(int pos=0;pos<=counter;pos++){
+                if(arr[pos] > 0){
+                    total += arr[pos];
+                    totalNum ++;
+                }
+            }
+            return(total / totalNum);
+        }
+
         @Override
         public void onQAStatus(boolean passed , int type){
             Log.i(TAG, "on QA Passed: " + passed + " T: " + type);

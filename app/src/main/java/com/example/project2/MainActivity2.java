@@ -73,6 +73,7 @@ public class MainActivity2 extends AppCompatActivity {
         public void onValueChanged(String key, float value) throws RemoteException {
             // update our view with proper values
             //view.updateNeuosValue(key, Math.round(value));
+
             list.add(String.valueOf(Math.round(value)));
 
         }
