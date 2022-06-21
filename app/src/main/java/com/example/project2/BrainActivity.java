@@ -23,6 +23,7 @@ import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -46,14 +47,19 @@ public class BrainActivity extends AppCompatActivity {
 
 
     private Button launchButton;
+    private TextView txt;
     private AlertDialog loadingDialog;
+    private AlertDialog testDialog;
     final String TAG = "Neuos SDK";
+    private TextView mytext;
+    private Button fetch;
     // TODO: This API key should be elsewhere
     final String API_KEY = "nfAi32Ttc13SXWQP4";
     private INeuosSdk mService;
     private Runnable mPostConnection;
     private BrainActivity.DeviceConnectionReceiver deviceListReceiver;
     private int counter = 0;
+    private String brainValue;
     private Map<Object, Object> info = new HashMap<>();
     private float EnjoymentArr[] = new float[25];
     private float FocusArr[] = new float[25];
@@ -69,11 +75,13 @@ public class BrainActivity extends AppCompatActivity {
         // Start the flow by verifying the permissions to use the SDK
         checkSDKPermissions();
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
+
         builder.setView(R.layout.progress_dialog);
         // This should be called once in your Fragment's onViewCreated() or in Activity onCreate() method to avoid dialog duplicates.
         loadingDialog = builder.create();
         setContentView(R.layout.activity_brain);
         launchButton = findViewById(R.id.start);
+        txt = findViewById(R.id.txt);
     }
 
     @Override
@@ -154,9 +162,12 @@ public class BrainActivity extends AppCompatActivity {
             switch(key){
                 case NeuosSDK.PredictionValues.ENJOYMENT_STATE:{
                     Log.i(TAG, "onValueChanged K: " + key + " V: " + value);
-                    // update our view with proper values
-                    // check timer if it's equivalent to 10 or multiples of ten
-                    Log.d(TAG, String.valueOf(counter));
+                }
+                case NeuosSDK.PredictionValues.FOCUS_STATE:{
+                    Log.i(TAG, "onValueChanged K: " + key + " V: " + value);
+//                    // update our view with proper values
+//                    // check timer if it's equivalent to 10 or multiples of ten
+//                    Log.d(TAG, String.valueOf(counter));
                     EnjoymentArr[counter] = value;
                     counter++;
 //
@@ -168,8 +179,13 @@ public class BrainActivity extends AppCompatActivity {
 //                        addDataToFirebase(String.valueOf(currentTime),value);
 
 //                        Log.i(TAG,currentTime+" "+value);
-                        Log.w(TAG,String.valueOf(counter));
+//                        Log.w(TAG,String.valueOf(counter));
+                        // array average data is
+
+                        brainValue = String.valueOf(arrayAverage(EnjoymentArr,counter));
                         Log.d(TAG,String.valueOf(arrayAverage(EnjoymentArr,counter)));
+                        txt.setText(brainValue);
+
                         counter=1;
                         //this is where the magic happens
                         // receive value for enjoyment state and focus state
@@ -227,6 +243,13 @@ public class BrainActivity extends AppCompatActivity {
                     checkCalibrationStatus();
                 }
             });
+    private final ActivityResultLauncher<Intent> resultsLauncher = registerForActivityResult(
+            new ActivityResultContracts.StartActivityForResult(),
+            result -> {
+                if (result.getResultCode() == Activity.RESULT_OK) {
+
+                }
+            });
     // Activity launcher for QA result
     private final ActivityResultLauncher<Intent> qaResultLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
@@ -243,9 +266,16 @@ public class BrainActivity extends AppCompatActivity {
                 }
                 else{
                     // we are good to go, launch the game
-                    appLauncher.launch(new Intent(this , MainActivity2.class));
+//                        setContentView(R.layout.activity_promodoro);
+//                    Intent intent = new Intent(this, MainActivity2.class);
+//                    intent.putExtra("my value",brainValue);
+//                    appLauncher.launch( intent);
+//                    startActivity(intent);
                 }
             });
+//    public void fetchData(View view){
+//        mytext.setText(getIntent().getStringExtra("my value"));
+//    }
     // Activity launcher for permissions request
     private final ActivityResultLauncher<String> requestPermissionLauncher =
             registerForActivityResult(new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -329,7 +359,9 @@ public class BrainActivity extends AppCompatActivity {
                         // Start a session
                         if (startSession() == NeuosSDK.ResponseCodes.SUCCESS) {
                             // once started successfully, launch QA screen
-                            launchQAScreen();
+                            launchQAScreen ();
+//                            Intent promodoro=  new Intent(this, MainActivity2.class);
+//                            startActivity(promodoro);
                         }
                     };
                     break;
@@ -404,7 +436,7 @@ public class BrainActivity extends AppCompatActivity {
         explicit.putExtra(NeuosQAProperties.STAND_ALONE , true);
         explicit.putExtra(NeuosQAProperties.TASK_PROPERTIES ,
                 new NeuosQAProperties(NeuosQAProperties.Quality.Normal , NeuosQAProperties.INFINITE_TIMEOUT));
-        qaResultLauncher.launch(explicit);
+//        qaResultLauncher.launch(explicit);
     }
     // Binds to Neuos Service
     private boolean doBindService() {

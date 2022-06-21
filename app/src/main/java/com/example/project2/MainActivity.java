@@ -37,11 +37,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
     }
 
-    public void launchPage2(View view) {
+    public void startSession(View view) {
         Intent intent = new Intent(this, BrainActivity.class);
-        //EditText editText = (EditText) findViewById(R.id.editTextTextPersonName);
-        //String message = editText.getText().toString();
-        //intent.putExtra(EXTRA_MESSAGE, message);
         startActivity(intent);
     }
 

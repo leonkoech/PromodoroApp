@@ -3,17 +3,62 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
+    android:background="@color/cardview_light_background"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <Button
-        android:id="@+id/openSecond"
-        android:layout_width="wrap_content"
+    <TextView
+        android:id="@+id/ClientName"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:onClick="launchPage2"
-        android:text="Start App"
+        android:text="Welcome Leon"
+        android:textColor="@color/black"
+        android:textAlignment="center"
+        android:textSize="40sp"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.186"
+        tools:layout_editor_absoluteX="0dp" />
+
+    <TextView
+        android:id="@+id/promodoroCount"
+        android:textColor="@color/black"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Promodoro Count: 0/4"
+        android:textSize="30sp"
+        android:textAlignment="center"
+        android:translationY="250dp"
+        tools:ignore= "MissingConstraints"/>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:orientation="horizontal"
+        android:baselineAligned="true">
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+        </RelativeLayout>
+        <RelativeLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1">
+            <Button
+                android:id="@+id/startSession"
+                android:layout_width="match_parent"
+                android:height="120dp"
+
+                android:layout_height="wrap_content"
+                android:onClick="startSession"
+                android:text="Start Promodoro Session"
+                android:textAllCaps="false"
+                tools:ignore="MissingConstraints" />
+        </RelativeLayout>
+    </LinearLayout>
+
+
+
+
 </androidx.constraintlayout.widget.ConstraintLayout>
