@@ -31,6 +31,7 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -47,7 +48,7 @@ public class BrainActivity extends AppCompatActivity {
 
 
     private Button launchButton;
-    private TextView txt;
+    private TextView focus, enjoyment;
     private AlertDialog loadingDialog;
     private AlertDialog testDialog;
     final String TAG = "Neuos SDK";
@@ -59,10 +60,16 @@ public class BrainActivity extends AppCompatActivity {
     private Runnable mPostConnection;
     private BrainActivity.DeviceConnectionReceiver deviceListReceiver;
     private int counter = 0;
-    private String brainValue;
+    private int arrCounter = 0;
+    private float brainValue;
     private Map<Object, Object> info = new HashMap<>();
-    private float EnjoymentArr[] = new float[25];
-    private float FocusArr[] = new float[25];
+    private float EnjoymentArr[] = new float[26];
+    private float FocusArr[] = new float[26];
+    private
+    // use arraylist, it's expandable
+    // because data is rare just record anything that is not 0 every 5 seconds
+
+    
     FirebaseFirestore database = FirebaseFirestore.getInstance();
 
     @Override
@@ -81,7 +88,8 @@ public class BrainActivity extends AppCompatActivity {
         loadingDialog = builder.create();
         setContentView(R.layout.activity_brain);
         launchButton = findViewById(R.id.start);
-        txt = findViewById(R.id.txt);
+        enjoyment = findViewById(R.id.enjoyment);
+        focus = findViewById(R.id.focus);
     }
 
     @Override
@@ -113,7 +121,8 @@ public class BrainActivity extends AppCompatActivity {
 
     public void onLaunchClick(View view) {
         launchButton.setEnabled(false);
-
+//        toString();
+        Log.i(TAG, String.valueOf(launchButton.isEnabled()));
         // This begins the flow of login -> check calibration -> start session -> Qa -> display data
         checkNeuosLoginStatus();
     }
@@ -158,46 +167,30 @@ public class BrainActivity extends AppCompatActivity {
 
         @Override
         public void onValueChanged(String key, float value) throws RemoteException {
-
-            switch(key){
-                case NeuosSDK.PredictionValues.ENJOYMENT_STATE:{
-                    Log.i(TAG, "onValueChanged K: " + key + " V: " + value);
+            counter++;
+            if(counter%25==0){
+                if(arrCounter<25){
+                    arrCounter++;
                 }
-                case NeuosSDK.PredictionValues.FOCUS_STATE:{
-                    Log.i(TAG, "onValueChanged K: " + key + " V: " + value);
-//                    // update our view with proper values
-//                    // check timer if it's equivalent to 10 or multiples of ten
-//                    Log.d(TAG, String.valueOf(counter));
-                    EnjoymentArr[counter] = value;
-                    counter++;
-//
-
-                    if (counter%24==0){
-                        Date currentTime = Calendar.getInstance().getTime();
-
-                        // TO:DO add data to firebase
-//                        addDataToFirebase(String.valueOf(currentTime),value);
-
-//                        Log.i(TAG,currentTime+" "+value);
-//                        Log.w(TAG,String.valueOf(counter));
-                        // array average data is
-
-                        brainValue = String.valueOf(arrayAverage(EnjoymentArr,counter));
-                        Log.d(TAG,String.valueOf(arrayAverage(EnjoymentArr,counter)));
-                        txt.setText(brainValue);
-
-                        counter=1;
-                        //this is where the magic happens
-                        // receive value for enjoyment state and focus state
-                        // place them in a queue
-
-                    }
-                    break;
+                else {
+                    Log.d(TAG, Arrays.toString(EnjoymentArr));
+                    Log.d(TAG, Arrays.toString(FocusArr));
+                    enjoyment.setText(Arrays.toString(EnjoymentArr));
+                    focus.setText(Float.toString(arrayAverage(FocusArr,arrCounter-1)));
+                    arrCounter = 0;
+                    // array is full store the value
+                }
+                switch(key){
+                    case NeuosSDK.PredictionValues.ENJOYMENT_STATE:
+                        readData(value,key,EnjoymentArr,enjoyment, "Enjoyment Value: ");
+                        break;
+                    case NeuosSDK.PredictionValues.FOCUS_STATE:
+                        readData(value,key,FocusArr,focus, "Focus Value: ");
+                        break;
                 }
 
+                counter = 1;
             }
-
-
 
         }
         public float arrayAverage(float[] arr,int counter){
@@ -205,12 +198,31 @@ public class BrainActivity extends AppCompatActivity {
             float total = 0;
             int totalNum = 0;
             for(int pos=0;pos<=counter;pos++){
-                if(arr[pos] > 0){
+                if(arr[pos] > 0 && arr[pos]<100){
                     total += arr[pos];
                     totalNum ++;
                 }
             }
             return(total / totalNum);
+        }
+        public void readData(float value,String key, float[] arr, TextView type, String text){
+            Log.i(TAG, "onValueChanged K: " + key + " V: " + value);
+            if (value > 0){
+                arr[arrCounter] = value;
+            }
+
+            Date currentTime = Calendar.getInstance().getTime();
+            brainValue = arrayAverage(arr, counter);
+
+            if(!Float.isInfinite(brainValue)){
+                Log.d(TAG, String.valueOf(arrCounter));
+                Log.d(TAG, String.valueOf(brainValue));
+//                type.setText(text+String.valueOf(brainValue));
+                // to find the average add to a total number of values all while counting how many values have been tracked so far
+            }
+
+
+
         }
 
         @Override
@@ -436,7 +448,7 @@ public class BrainActivity extends AppCompatActivity {
         explicit.putExtra(NeuosQAProperties.STAND_ALONE , true);
         explicit.putExtra(NeuosQAProperties.TASK_PROPERTIES ,
                 new NeuosQAProperties(NeuosQAProperties.Quality.Normal , NeuosQAProperties.INFINITE_TIMEOUT));
-//        qaResultLauncher.launch(explicit);
+        qaResultLauncher.launch(explicit);
     }
     // Binds to Neuos Service
     private boolean doBindService() {
