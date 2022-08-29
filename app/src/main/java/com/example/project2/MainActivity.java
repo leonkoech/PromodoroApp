@@ -58,6 +58,7 @@ public class MainActivity extends AppCompatActivity {
         fifty = findViewById(R.id.longSession);
         twentyFive = findViewById(R.id.shortSession);
         username = findViewById(R.id.username);
+        newSession = findViewById(R.id.startSession);
         fifty.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -91,6 +92,12 @@ public class MainActivity extends AppCompatActivity {
                 stepOne.setVisibility(View.VISIBLE);
             }
         });
+        newSession.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                newSession();
+            }
+        });
     }
 
     public void startSession(View view) {
@@ -111,13 +118,15 @@ public class MainActivity extends AppCompatActivity {
         values.put("name",name);
         values.put("type", type);
         values.put("date", date);
-        Intent intent = new Intent(this, BrainActivity.class);
-        intent.putExtra("values",values);
-        startActivity(intent);
     }
     public String getTimeNow(String format){
         Date date =  new Date();
         SimpleDateFormat formatter = new SimpleDateFormat(format);
         return formatter.format(date);
+    }
+    public void newSession(){
+        Intent intent = new Intent(this, BrainActivity.class);
+        intent.putExtra("values",values);
+        startActivity(intent);
     }
 }

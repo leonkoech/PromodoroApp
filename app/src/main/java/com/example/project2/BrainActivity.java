@@ -113,14 +113,14 @@ public class BrainActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         values = (HashMap<String, String>) intent.getSerializableExtra("values");
-
-        startTimer(10,starter,mainCounter, true);
         endSession.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 killTimer();
             }
         });
+        // This begins the flow of login -> check calibration -> start session -> Qa -> display data
+        checkNeuosLoginStatus();
     }
     public String getTimeNow(String format){
         Date date =  new Date();
@@ -383,12 +383,8 @@ public class BrainActivity extends AppCompatActivity {
                 }
                 else{
                     // TODO go nowhere?
-                    // we are good to go, launch the game
-//                        setContentView(R.layout.activity_promodoro);
-//                    Intent intent = new Intent(this, MainActivity2.class);
-//                    intent.putExtra("my value",brainValue);
-//                    appLauncher.launch( intent);
-//                    startActivity(intent);
+                    // we are good to go, start the timer
+                    startTimer(10,starter,mainCounter, true);
                 }
             });
 //    public void fetchData(View view){
@@ -477,9 +473,7 @@ public class BrainActivity extends AppCompatActivity {
                         // Start a session
                         if (startSession() == NeuosSDK.ResponseCodes.SUCCESS) {
                             // once started successfully, launch QA screen
-//                            launchQAScreen ();
-//                            Intent promodoro=  new Intent(this, MainActivity2.class);
-//                            startActivity(promodoro);
+                            launchQAScreen ();
                         }
                     };
                     break;
