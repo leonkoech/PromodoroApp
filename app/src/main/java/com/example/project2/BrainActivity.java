@@ -18,11 +18,13 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -31,12 +33,15 @@ import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.FirebaseFirestore;
 
 import java.lang.reflect.Array;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import io.neuos.INeuosSdk;
 import io.neuos.INeuosSdkListener;
@@ -61,17 +66,26 @@ public class BrainActivity extends AppCompatActivity {
     private BrainActivity.DeviceConnectionReceiver deviceListReceiver;
     private int counter = 0;
     private int arrCounter = 0;
+    private int timeCounter = 0; // counts 1 every second
     private float brainValue;
     private Map<Object, Object> info = new HashMap<>();
     private float EnjoymentArr[] = new float[26];
     private float FocusArr[] = new float[26];
-    private
+    private ArrayList<Map<Object, Object>> finalResFocus= new ArrayList<Map<Object, Object>>();
     // use arraylist, it's expandable
-    // because data is rare just record anything that is not 0 every 5 seconds
+    // because data is rare just record anything that is not 0 or NaN every 5 seconds
+
+    // I decided to record the data every 5 seconds as [ {time:data},{time:data} ] for focus and enjoyment
+    // then create a dict that takes all this at the end of the session
 
     
     FirebaseFirestore database = FirebaseFirestore.getInstance();
+    TextView starter, mainCounter;
+    Button endSession;
+    LinearLayout initialCounterScreen, mainCounterScreen;
+    CountDownTimer timer = null;
 
+    HashMap<String, String> values;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -87,9 +101,77 @@ public class BrainActivity extends AppCompatActivity {
         // This should be called once in your Fragment's onViewCreated() or in Activity onCreate() method to avoid dialog duplicates.
         loadingDialog = builder.create();
         setContentView(R.layout.activity_brain);
-        launchButton = findViewById(R.id.start);
-        enjoyment = findViewById(R.id.enjoyment);
-        focus = findViewById(R.id.focus);
+//        launchButton = findViewById(R.id.start);
+//        enjoyment = findViewById(R.id.enjoyment);
+//        focus = findViewById(R.id.focus);
+//        timer = findViewById(R.id.timer);
+        starter = findViewById(R.id.startCountdown);
+        mainCounter = findViewById(R.id.mainCounter);
+        initialCounterScreen = findViewById(R.id.initialCounterScreen);
+        mainCounterScreen  = findViewById(R.id.mainCounterScreen);
+        endSession = findViewById(R.id.killSession);
+
+        Intent intent = getIntent();
+        values = (HashMap<String, String>) intent.getSerializableExtra("values");
+
+        startTimer(10,starter,mainCounter, true);
+        endSession.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                killTimer();
+            }
+        });
+    }
+    public String getTimeNow(String format){
+        Date date =  new Date();
+        SimpleDateFormat formatter = new SimpleDateFormat(format);
+        return formatter.format(date);
+    }
+    public void startTimer(int seconds,TextView initialCounter, TextView mainCounter, boolean initial){
+        int totalTime = seconds*1000;
+        int sessionTime = Integer.parseInt(values.get("type"))*60;
+        timer  = new CountDownTimer(totalTime, 1000) {
+            public void onTick(long millisUntilFinished) {
+                if(initial){
+                    initialCounter.setText("00:" + String.format("%02d",millisUntilFinished / 1000));
+                }
+                else{
+                    initialCounter.setText("" +String.format("%02d:%02d",
+                            TimeUnit.MILLISECONDS.toMinutes( millisUntilFinished),
+                            TimeUnit.MILLISECONDS.toSeconds(millisUntilFinished) - TimeUnit.MINUTES.toSeconds(TimeUnit.MILLISECONDS.toMinutes(millisUntilFinished))));
+                }
+            }
+            public void onFinish() {
+                if(initial) {
+                    startMainCounter(sessionTime, initialCounter, mainCounter);
+                }
+                else{
+                    String startTime  = getTimeNow("HH:mm:ss");
+                    values.put("end time",startTime);
+                    //TODO end session automatically here
+                }
+            }
+        }.start();
+    }
+    public void killTimer(){
+        if(timer!=null){
+            timer.cancel();
+            endSession.setText("Back");
+            endSession.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    finish();
+                }
+            });
+        }
+    }
+    public void startMainCounter(int time, TextView initialCounter, TextView mainCounter){
+        initialCounterScreen.setVisibility(View.GONE);
+        mainCounterScreen.setVisibility(View.VISIBLE);
+        startTimer(time, mainCounter, initialCounter,false);
+        String startTime  = getTimeNow("HH:mm:ss");
+        values.put("start time",startTime);
+        //TODO start session here
     }
 
     @Override
@@ -168,37 +250,60 @@ public class BrainActivity extends AppCompatActivity {
         @Override
         public void onValueChanged(String key, float value) throws RemoteException {
             counter++;
-            if(counter%25==0){
-                if(arrCounter<25){
-                    arrCounter++;
-                }
-                else {
-                    Log.d(TAG, Arrays.toString(EnjoymentArr));
-                    Log.d(TAG, Arrays.toString(FocusArr));
-                    enjoyment.setText(Arrays.toString(EnjoymentArr));
-                    focus.setText(Float.toString(arrayAverage(FocusArr,arrCounter-1)));
-                    arrCounter = 0;
-                    // array is full store the value
-                }
-                switch(key){
-                    case NeuosSDK.PredictionValues.ENJOYMENT_STATE:
-                        readData(value,key,EnjoymentArr,enjoyment, "Enjoyment Value: ");
-                        break;
-                    case NeuosSDK.PredictionValues.FOCUS_STATE:
-                        readData(value,key,FocusArr,focus, "Focus Value: ");
-                        break;
-                }
+            timeCounter++;
+            int numberOfSeconds = 60;
+            if(timeCounter < numberOfSeconds) {
+                if (counter % 25 == 0) {
 
-                counter = 1;
+                    if (arrCounter < 25) {
+                        arrCounter++;
+                    } else {
+                        Log.d(TAG, Arrays.toString(EnjoymentArr));
+                        Log.d(TAG, Arrays.toString(FocusArr));
+                        enjoyment.setText(Arrays.toString(EnjoymentArr));
+//                    focus.setText(Float.toString(arrayAverage(FocusArr,arrCounter-1)));
+                        // TODO append  time->Calendar.getInstance().getTime(), data (can be in array form of the past 5 seconds)
+                        // this is how the array list will look like after one iteration
+                        // [[timeStamp,[78,67,45,34,78,90,23,23]]
+
+//                    Date timeStamp = Calendar.getInstance().getTime();
+                        // idea: use a counter instead of retrieving actual time
+                        Float val = arrayAverage(FocusArr);
+                        Map<Object, Object> data = new HashMap<>();
+//                    function(){
+                        // timeCounter is the number of seconds since we started receiving input
+                        // receive value of text and subtract it by time counter
+                        // then set the time
+                        // }
+                        data.put(timeCounter, val);
+                        finalResFocus.add(data);
+                        // we can call the function to find the average but it will be a waste of memory since the difference in time stamp is only 5 seconds
+                        arrCounter = 0;
+                        // array is full store the value
+                    }
+                    switch (key) {
+                        case NeuosSDK.PredictionValues.ENJOYMENT_STATE:
+                            readData(value, key, EnjoymentArr, enjoyment, "Enjoyment Value: ");
+                            break;
+                        case NeuosSDK.PredictionValues.FOCUS_STATE:
+                            readData(value, key, FocusArr, focus, "Focus Value: ");
+                            break;
+                    }
+
+                    counter = 1;
+                }
             }
+            else{
 
+            }
         }
-        public float arrayAverage(float[] arr,int counter){
+
+        public float arrayAverage(float[] arr){
 //            int pos = 0;
             float total = 0;
             int totalNum = 0;
-            for(int pos=0;pos<=counter;pos++){
-                if(arr[pos] > 0 && arr[pos]<100){
+            for(int pos=0;pos<arr.length;pos++){
+                if(arr[pos] > 0 && arr[pos]<=100){
                     total += arr[pos];
                     totalNum ++;
                 }
@@ -211,15 +316,15 @@ public class BrainActivity extends AppCompatActivity {
                 arr[arrCounter] = value;
             }
 
-            Date currentTime = Calendar.getInstance().getTime();
-            brainValue = arrayAverage(arr, counter);
-
-            if(!Float.isInfinite(brainValue)){
-                Log.d(TAG, String.valueOf(arrCounter));
-                Log.d(TAG, String.valueOf(brainValue));
-//                type.setText(text+String.valueOf(brainValue));
-                // to find the average add to a total number of values all while counting how many values have been tracked so far
-            }
+//            Date currentTime = Calendar.getInstance().getTime();
+//            brainValue = arrayAverage(arr, counter);
+//            //TODO log the brain value
+//            if(!Float.isInfinite(brainValue)){
+//                Log.d(TAG, String.valueOf(arrCounter));
+//                Log.d(TAG, String.valueOf(brainValue));
+////                type.setText(text+String.valueOf(brainValue));
+//                // to find the average add to a total number of values all while counting how many values have been tracked so far
+//            }
 
 
 
@@ -277,6 +382,7 @@ public class BrainActivity extends AppCompatActivity {
                     }
                 }
                 else{
+                    // TODO go nowhere?
                     // we are good to go, launch the game
 //                        setContentView(R.layout.activity_promodoro);
 //                    Intent intent = new Intent(this, MainActivity2.class);
@@ -371,7 +477,7 @@ public class BrainActivity extends AppCompatActivity {
                         // Start a session
                         if (startSession() == NeuosSDK.ResponseCodes.SUCCESS) {
                             // once started successfully, launch QA screen
-                            launchQAScreen ();
+//                            launchQAScreen ();
 //                            Intent promodoro=  new Intent(this, MainActivity2.class);
 //                            startActivity(promodoro);
                         }
