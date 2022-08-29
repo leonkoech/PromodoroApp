@@ -1,33 +1,41 @@
 {
   "project_info": {
-    "project_number": "246597249670",
-    "project_id": "project2-a24b0",
-    "storage_bucket": "project2-a24b0.appspot.com"
+    "project_number": "564654250848",
+    "project_id": "arctop-promodoro",
+    "storage_bucket": "arctop-promodoro.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:246597249670:android:a8f921e820ec837e80ff07",
+        "mobilesdk_app_id": "1:564654250848:android:845df14f1ce9545d6ddc05",
         "android_client_info": {
           "package_name": "com.example.project2"
         }
       },
       "oauth_client": [
         {
-          "client_id": "246597249670-8rnheidafdonc9ecu2g2cab7cjmlg5u2.apps.googleusercontent.com",
+          "client_id": "564654250848-2vap71n8072lljsj22ksfaguqkm4qeos.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.project2",
+            "certificate_hash": "cee7d99bbddf25e7a294f581281746210c589848"
+          }
+        },
+        {
+          "client_id": "564654250848-vb3k5v1afhqb7318vk0a9ljv7rgb4pce.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyC-LJ2P3an0uhIMoGA7nU-BW-q2AUrk5RE"
+          "current_key": "AIzaSyA04kPIpKrQ_2tV4LiZb-tyAPs3fPwdgwU"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "246597249670-8rnheidafdonc9ecu2g2cab7cjmlg5u2.apps.googleusercontent.com",
+              "client_id": "564654250848-vb3k5v1afhqb7318vk0a9ljv7rgb4pce.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

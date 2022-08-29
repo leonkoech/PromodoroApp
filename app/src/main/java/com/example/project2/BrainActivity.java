@@ -40,7 +40,9 @@ import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import io.neuos.INeuosSdk;
@@ -80,11 +82,14 @@ public class BrainActivity extends AppCompatActivity {
 
     
     FirebaseFirestore database = FirebaseFirestore.getInstance();
+
     TextView starter, mainCounter;
     Button endSession;
     LinearLayout initialCounterScreen, mainCounterScreen;
     CountDownTimer timer = null;
-
+    String name;
+    String uid;
+    String sessionsCount;
     HashMap<String, String> values;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,14 +118,21 @@ public class BrainActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
         values = (HashMap<String, String>) intent.getSerializableExtra("values");
+        name =  Objects.requireNonNull(values.get("name"));
+        uid = Objects.requireNonNull(values.get("uid"));
+        sessionsCount = Objects.requireNonNull(values.get("sessionsCount"));
         endSession.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
                 killTimer();
             }
         });
+        // add the basic user information to firebase
+//        addUserDataToFirebase();
         // This begins the flow of login -> check calibration -> start session -> Qa -> display data
-        checkNeuosLoginStatus();
+//        checkNeuosLoginStatus();
+        startTimer(10,starter,mainCounter, true);
+
     }
     public String getTimeNow(String format){
         Date date =  new Date();
@@ -160,6 +172,8 @@ public class BrainActivity extends AppCompatActivity {
             endSession.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
+                    String startTime  = getTimeNow("HH:mm:ss");
+                    values.put("end time",startTime);
                     finish();
                 }
             });
@@ -171,7 +185,6 @@ public class BrainActivity extends AppCompatActivity {
         startTimer(time, mainCounter, initialCounter,false);
         String startTime  = getTimeNow("HH:mm:ss");
         values.put("start time",startTime);
-        //TODO start session here
     }
 
     @Override
@@ -186,28 +199,37 @@ public class BrainActivity extends AppCompatActivity {
         }
         super.onDestroy();
     }
-
-    public void addDataToFirebase(Object time,Object value){
-        info.put("Enjoyment",value);
-        info.put("time",time);
-        database.collection("userInformation").document("user"+String.valueOf(counter+1))
-                .collection("Enjoyment").add(info)
-                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                    @Override
-                    public void onSuccess(DocumentReference documentReference) {
-                        Log.i(TAG,"Updated Data in Firebase");
-                    }
-                });
+    public void addUserDataToFirebase(){
+        HashMap<String, String> userInformation = new HashMap<String, String>();
+        userInformation.put("name",name);
+        userInformation.put("uid",uid);
+        database.collection("promodoro").document(uid).set(userInformation);
     }
-
-
-    public void onLaunchClick(View view) {
-        launchButton.setEnabled(false);
-//        toString();
-        Log.i(TAG, String.valueOf(launchButton.isEnabled()));
-        // This begins the flow of login -> check calibration -> start session -> Qa -> display data
-        checkNeuosLoginStatus();
+    public void uploadPromodoroSessions(ArrayList<Float> data){
+        database.collection("promodoro").document(uid).collection(values.get("type"))
+                .document(String.valueOf(Integer.parseInt(sessionsCount)+1)).set(data);
     }
+//    public void addDataToFirebase(Object time,Object value){
+//        info.put("Enjoyment",value);
+//        info.put("time",time);
+//        database.collection("userInformation").document("user"+String.valueOf(counter+1))
+//                .collection("Enjoyment").add(info)
+//                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+//                    @Override
+//                    public void onSuccess(DocumentReference documentReference) {
+//                        Log.i(TAG,"Updated Data in Firebase");
+//                    }
+//                });
+//    }
+
+//
+//    public void onLaunchClick(View view) {
+//        launchButton.setEnabled(false);
+////        toString();
+//        Log.i(TAG, String.valueOf(launchButton.isEnabled()));
+//        // This begins the flow of login -> check calibration -> start session -> Qa -> display data
+//        checkNeuosLoginStatus();
+//    }
 
     // Activity launcher from login
     private final ActivityResultLauncher<Intent> appLauncher = registerForActivityResult(

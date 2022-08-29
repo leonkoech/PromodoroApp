@@ -55,6 +55,7 @@
                 android:layout_weight="1"
                 android:textAlignment="center"
                 android:layout_width="match_parent"
+                android:textColor="@color/grey"
                 android:layout_height="match_parent"
                 android:text="Ending the session will kill the session
 and no results will be calibrated. \n\n Proceed with caution ;)">
