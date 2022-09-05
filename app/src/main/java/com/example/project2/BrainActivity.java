@@ -54,10 +54,7 @@ import io.neuos.NeuosSDK;
 public class BrainActivity extends AppCompatActivity {
 
 
-    private Button launchButton;
-    private TextView focus, enjoyment;
     private AlertDialog loadingDialog;
-    private AlertDialog testDialog;
     final String TAG = "Neuos SDK";
     private TextView mytext;
     private Button fetch;
@@ -67,16 +64,15 @@ public class BrainActivity extends AppCompatActivity {
     private Runnable mPostConnection;
     private BrainActivity.DeviceConnectionReceiver deviceListReceiver;
     private int counter = 0;
-    private int arrCounter = 0;
-    private int timeCounter = 0; // counts 1 every second
-    private float brainValue;
-    private Map<Object, Object> info = new HashMap<>();
-    private float EnjoymentArr[] = new float[26];
-    private float FocusArr[] = new float[26];
-    private ArrayList<Map<Object, Object>> finalResFocus= new ArrayList<Map<Object, Object>>();
+    private int minuteCounter= 0; // counts 1 every minute
+//    private Map<Object, Object> info = new HashMap<>();
+//    private float EnjoymentArr[] = new float[26];
+//    private float FocusArr[] = new float[26];
+//    private ArrayList<Map<Object, Object>> finalResFocus= new ArrayList<Map<Object, Object>>();
     // use arraylist, it's expandable
     // because data is rare just record anything that is not 0 or NaN every 5 seconds
-
+    ArrayList<Float> enjoyment = new ArrayList<Float>();
+    ArrayList<Float> focus = new ArrayList<Float>();
     // I decided to record the data every 5 seconds as [ {time:data},{time:data} ] for focus and enjoyment
     // then create a dict that takes all this at the end of the session
 
@@ -91,6 +87,7 @@ public class BrainActivity extends AppCompatActivity {
     String uid;
     String sessionsCount;
     HashMap<String, String> values;
+    boolean started=false;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -120,7 +117,8 @@ public class BrainActivity extends AppCompatActivity {
         values = (HashMap<String, String>) intent.getSerializableExtra("values");
         name =  Objects.requireNonNull(values.get("name"));
         uid = Objects.requireNonNull(values.get("uid"));
-        sessionsCount = Objects.requireNonNull(values.get("sessionsCount"));
+//        sessionsCount = Objects.requireNonNull(values.get("sessionsCount"));
+        sessionsCount = String.valueOf(0);
         endSession.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -130,8 +128,7 @@ public class BrainActivity extends AppCompatActivity {
         // add the basic user information to firebase
 //        addUserDataToFirebase();
         // This begins the flow of login -> check calibration -> start session -> Qa -> display data
-//        checkNeuosLoginStatus();
-        startTimer(10,starter,mainCounter, true);
+        checkNeuosLoginStatus();
 
     }
     public String getTimeNow(String format){
@@ -161,6 +158,8 @@ public class BrainActivity extends AppCompatActivity {
                     String startTime  = getTimeNow("HH:mm:ss");
                     values.put("end time",startTime);
                     //TODO end session automatically here
+                    // display loading page here while uploading to firebase and thank the user
+
                 }
             }
         }.start();
@@ -268,89 +267,122 @@ public class BrainActivity extends AppCompatActivity {
         }
         // problem statement is that I have to post information to firebase every x number of seconds
         // solution check if time is divisible by 5
-
+        ArrayList<Float> tempEnjoyment = new ArrayList<Float>(),
+                tempFocus = new ArrayList<Float>();
+        float enjoymentVal = 0,
+                focusVal = 0;
+        int minuteTimer = 0,
+        secondTimer = 0;// this timer should
         @Override
         public void onValueChanged(String key, float value) throws RemoteException {
+
+
             counter++;
-            timeCounter++;
-            int numberOfSeconds = 60;
-            if(timeCounter < numberOfSeconds) {
-                if (counter % 25 == 0) {
 
-                    if (arrCounter < 25) {
-                        arrCounter++;
-                    } else {
-                        Log.d(TAG, Arrays.toString(EnjoymentArr));
-                        Log.d(TAG, Arrays.toString(FocusArr));
-                        enjoyment.setText(Arrays.toString(EnjoymentArr));
-//                    focus.setText(Float.toString(arrayAverage(FocusArr,arrCounter-1)));
-                        // TODO append  time->Calendar.getInstance().getTime(), data (can be in array form of the past 5 seconds)
-                        // this is how the array list will look like after one iteration
-                        // [[timeStamp,[78,67,45,34,78,90,23,23]]
 
-//                    Date timeStamp = Calendar.getInstance().getTime();
-                        // idea: use a counter instead of retrieving actual time
-                        Float val = arrayAverage(FocusArr);
-                        Map<Object, Object> data = new HashMap<>();
-//                    function(){
-                        // timeCounter is the number of seconds since we started receiving input
-                        // receive value of text and subtract it by time counter
-                        // then set the time
-                        // }
-                        data.put(timeCounter, val);
-                        finalResFocus.add(data);
-                        // we can call the function to find the average but it will be a waste of memory since the difference in time stamp is only 5 seconds
-                        arrCounter = 0;
-                        // array is full store the value
-                    }
-                    switch (key) {
-                        case NeuosSDK.PredictionValues.ENJOYMENT_STATE:
-                            readData(value, key, EnjoymentArr, enjoyment, "Enjoyment Value: ");
-                            break;
-                        case NeuosSDK.PredictionValues.FOCUS_STATE:
-                            readData(value, key, FocusArr, focus, "Focus Value: ");
-                            break;
-                    }
-
-                    counter = 1;
+            if (counter % 25 == 0) {
+                // in every 25 that's 5 seconds
+                secondTimer++;
+                if(secondTimer%12 == 0 ){
+                    minuteTimer++;
+                    // upload data
+                    String TAG = "items to be uploaded";
+                    Log.d(TAG,"Enjoyment items to be uploaded are "+minuteTimer +" : "+enjoyment);
+                    Log.d(TAG,"Focus items to be uploaded are "+minuteTimer +" : "+focus);
                 }
+                enjoymentVal = findMax(tempEnjoyment);
+                focusVal = findMax(tempFocus);
+
+                enjoyment.add(enjoymentVal);
+                focus.add(focusVal);
+
+                // TODO empty tempEnjoyment and tempFocus
+                tempEnjoyment.clear();
+                tempFocus.clear();
+
+                counter = 1;
+
             }
             else{
-
-            }
-        }
-
-        public float arrayAverage(float[] arr){
-//            int pos = 0;
-            float total = 0;
-            int totalNum = 0;
-            for(int pos=0;pos<arr.length;pos++){
-                if(arr[pos] > 0 && arr[pos]<=100){
-                    total += arr[pos];
-                    totalNum ++;
+                switch(key) {
+                    case NeuosSDK.PredictionValues.ENJOYMENT_STATE:
+                        tempEnjoyment.add(value);
+                        break;
+                    case NeuosSDK.PredictionValues.FOCUS_STATE:
+                        tempFocus.add(value);
+                        break;
                 }
             }
-            return(total / totalNum);
         }
-        public void readData(float value,String key, float[] arr, TextView type, String text){
-            Log.i(TAG, "onValueChanged K: " + key + " V: " + value);
-            if (value > 0){
-                arr[arrCounter] = value;
+        public float findMax(ArrayList<Float> arr){
+            float max = -2;
+            for (int i=0;i<arr.size();i++){
+                if(arr.get(i)>max){
+                    max = arr.get(i);
+                }
             }
-
-//            Date currentTime = Calendar.getInstance().getTime();
-//            brainValue = arrayAverage(arr, counter);
-//            //TODO log the brain value
-//            if(!Float.isInfinite(brainValue)){
-//                Log.d(TAG, String.valueOf(arrCounter));
-//                Log.d(TAG, String.valueOf(brainValue));
-////                type.setText(text+String.valueOf(brainValue));
-//                // to find the average add to a total number of values all while counting how many values have been tracked so far
-//            }
-
-
-
+            return max;
         }
+        public  boolean checkAnomaly(float average, float param){
+            float diff= average-param;
+            if (diff>0 && diff>30) {
+                return false;
+            }
+            else if (diff<0 && diff<-30) {
+                return false;
+            }
+            return true;
+        }
+        public  boolean checkZero(float param){
+            return (param==0.0);
+        }
+        public  ArrayList<Float> cleanList(float data[]){
+            Arrays.sort(data);
+            ArrayList<Float> ret = new ArrayList<Float>();
+            float count = 0;
+            float sum = 0;
+            int init = 0;
+            while(data.length>0){
+                if(checkZero(data[init])){
+                    init++;
+                }
+                else{
+                    break;
+                }
+            }
+            float tempAverage = (data[init]+data[data.length-1])/2;
+            float average = (tempAverage-data[init])<(tempAverage-data[data.length-1])?data[init]:data[data.length-1];
+            for (int i=0;i<data.length;i++){
+                float val = data[i];
+
+                if (checkAnomaly(average,val)){
+                    sum+=val;
+                    count++;
+                    average = sum/count;
+                    ret.add((float) val);
+                }
+            }
+            return ret;
+        }
+
+//        public float arrayAverage(float[] arr){
+////            int pos = 0;
+//            float total = 0;
+//            int totalNum = 0;
+//            for(int pos=0;pos<arr.length;pos++){
+//                if(arr[pos] > 0 && arr[pos]<=100){
+//                    total += arr[pos];
+//                    totalNum ++;
+//                }
+//            }
+//            return(total / totalNum);
+//        }
+//        public void readData(float value,String key, float[] arr, TextView type, String text){
+//            Log.i(TAG, "onValueChanged K: " + key + " V: " + value);
+//            if (value > 0){
+//                arr[arrCounter] = value;
+//            }
+//        }
 
         @Override
         public void onQAStatus(boolean passed , int type){
@@ -363,7 +395,7 @@ public class BrainActivity extends AppCompatActivity {
             // Once the session upload is complete, hide the dialog and allow re-launch
             runOnUiThread( () -> {
                 loadingDialog.dismiss();
-                launchButton.setEnabled(true);
+                //TODO when session is completed
             });
         }
 
@@ -424,6 +456,7 @@ public class BrainActivity extends AppCompatActivity {
                     // same time, respect the user's decision. Don't link to system
                     // settings in an effort to convince the user to change their
                     // decision.
+                    Log.d("error","binding service error");
                 }
             });
 
