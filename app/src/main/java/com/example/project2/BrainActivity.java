@@ -80,7 +80,7 @@ public class BrainActivity extends AppCompatActivity {
     FirebaseFirestore database = FirebaseFirestore.getInstance();
 
     TextView starter, mainCounter;
-    Button endSession;
+    Button endSession, launchButton;
     LinearLayout initialCounterScreen, mainCounterScreen;
     CountDownTimer timer = null;
     String name;
@@ -103,7 +103,7 @@ public class BrainActivity extends AppCompatActivity {
         // This should be called once in your Fragment's onViewCreated() or in Activity onCreate() method to avoid dialog duplicates.
         loadingDialog = builder.create();
         setContentView(R.layout.activity_brain);
-//        launchButton = findViewById(R.id.start);
+        launchButton = findViewById(R.id.startSession);
 //        enjoyment = findViewById(R.id.enjoyment);
 //        focus = findViewById(R.id.focus);
 //        timer = findViewById(R.id.timer);
@@ -128,7 +128,7 @@ public class BrainActivity extends AppCompatActivity {
         // add the basic user information to firebase
 //        addUserDataToFirebase();
         // This begins the flow of login -> check calibration -> start session -> Qa -> display data
-        checkNeuosLoginStatus();
+//        checkNeuosLoginStatus();
 
     }
     public String getTimeNow(String format){
@@ -159,7 +159,7 @@ public class BrainActivity extends AppCompatActivity {
                     values.put("end time",startTime);
                     //TODO end session automatically here
                     // display loading page here while uploading to firebase and thank the user
-
+//                    checkNeuosLoginStatus();
                 }
             }
         }.start();
@@ -203,6 +203,7 @@ public class BrainActivity extends AppCompatActivity {
         userInformation.put("name",name);
         userInformation.put("uid",uid);
         database.collection("promodoro").document(uid).set(userInformation);
+        startTimer(10,starter,mainCounter, true);
     }
     public void uploadPromodoroSessions(ArrayList<Float> data){
         database.collection("promodoro").document(uid).collection(values.get("type"))
@@ -222,13 +223,13 @@ public class BrainActivity extends AppCompatActivity {
 //    }
 
 //
-//    public void onLaunchClick(View view) {
-//        launchButton.setEnabled(false);
-////        toString();
-//        Log.i(TAG, String.valueOf(launchButton.isEnabled()));
-//        // This begins the flow of login -> check calibration -> start session -> Qa -> display data
-//        checkNeuosLoginStatus();
-//    }
+    public void onLaunchClick(View view) {
+        launchButton.setEnabled(false);
+//        toString();
+        Log.i(TAG, String.valueOf(launchButton.isEnabled()));
+        // This begins the flow of login -> check calibration -> start session -> Qa -> display data
+        checkNeuosLoginStatus();
+    }
 
     // Activity launcher from login
     private final ActivityResultLauncher<Intent> appLauncher = registerForActivityResult(
@@ -255,8 +256,10 @@ public class BrainActivity extends AppCompatActivity {
     }
     // Neuos SDK Listener
     private final INeuosSdkListener mCallback = new INeuosSdkListener.Stub() {
+
         @Override
         public void onConnectionChanged(int previousConnection, int currentConnection) throws RemoteException {
+            Log.d(TAG,"tsttsttstst");
             Log.i(TAG, "onConnectionChanged P: " + previousConnection + " C: " + currentConnection);
             if (currentConnection == NeuosSDK.ConnectionState.CONNECTED){
                 if (mPostConnection != null){
@@ -499,6 +502,7 @@ public class BrainActivity extends AppCompatActivity {
                     Log.i(TAG, "register callback: returned with code " + response);
                 }
             } catch (RemoteException e) {
+                Log.d(TAG,"service has an error");
                 Log.e(TAG, e.getLocalizedMessage());
             }
         }
@@ -567,6 +571,7 @@ public class BrainActivity extends AppCompatActivity {
     // Check the login status of a user
     private void checkNeuosLoginStatus() {
         try {
+            Log.d(TAG,"testing");
             int status = mService.getUserLoginStatus();
             switch (status){
                 case NeuosSDK.LoginStatus.LOGGED_IN:{
